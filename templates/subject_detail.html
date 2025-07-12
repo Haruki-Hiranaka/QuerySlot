@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ sheet_name }} の質問対応状況</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #34495e;
+            margin-bottom: 25px;
+            font-size: 2em;
+        }
+        #back-button {
+            background-color: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        #back-button:hover {
+            background-color: #95a5a6;
+        }
+        #availability-display {
+            width: 90%;
+            max-width: 800px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding: 20px;
+        }
+        /* --- 新規追加: 日付ごとのグループスタイル --- */
+        .date-group {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .date-group:last-child { /* 最後のdate-groupの下マージンを調整 */
+            margin-bottom: 0;
+        }
+        .date-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .time-slot-group {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .time-slot-group:last-child {
+            border-bottom: none;
+        }
+        .time-slot-header {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 10px;
+        }
+        .subject-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-top: 1px dashed #f0f0f0;
+            /* --- 追加: グレーアウト時の背景色トランジション --- */
+            transition: background-color 0.3s ease, opacity 0.3s ease;
+        }
+        .subject-item:first-child {
+            border-top: none;
+        }
+        .subject-item .info {
+            flex-basis: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+        .subject-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .teacher-name {
+            color: #555;
+            font-size: 0.9em;
+            margin-top: 2px;
+        }
+        .status {
+            flex-basis: 20%;
+            text-align: right;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            font-size: 1.1em;
+        }
+        .status.available {
+            color: #27ae60;
+        }
+        .status.unavailable { /* その他のステータス */
+            color: #e74c3c;
+        }
+        /* --- ここから追加: 「質問対応中」の場合のスタイル --- */
+        .subject-item.in-session-item { /* subject-item全体をグレーアウト */
+            background-color: #e0e0e0; /* 薄いグレーの背景 */
+            opacity: 0.7; /* 少し透明度も加える */
+            /* pointer-events: none; /* 必要ならクリックや選択を無効にする */
+        }
+        .subject-item.in-session-item .status { /* ステータス部分の文字色も統一 */
+            color: #666666; 
+        }
+        .subject-item.in-session-item .subject-name,
+        .subject-item.in-session-item .teacher-name {
+            color: #666666; /* 科目名と講師名の文字色も薄く */
+        }
+        /* --- 追加ここまで --- */
+
+        #last-updated {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+        }
+        .loading-message {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <h1>明治大学 質問対応状況</h1>
+    <a href="/" id="back-button">科目一覧に戻る</a>
+    <h2 id="current-subject-title">{{ sheet_name }}</h2>
+
+    <div id="availability-display">
+        <div class="loading-message">
+            読み込み中...
+        </div>
+    </div>
+    <p id="last-updated"></p>
+
+    <script>
+        const availabilityDisplayDiv = document.getElementById('availability-display');
+        const lastUpdatedElement = document.getElementById('last-updated');
+        
+        const sheetName = "{{ sheet_name }}"; 
+
+        // --- 指定された科目の対応状況を取得して表示 ---
+        async function fetchAvailabilityForSubject(sheetName) {
+            availabilityDisplayDiv.innerHTML = '<div class="loading-message">読み込み中...</div>';
+            lastUpdatedElement.textContent = '';
+
+            try {
+                const response = await fetch(`/api/availability_by_sheet/${sheetName}`);
+                const groupedDataByDate = await response.json(); // 日付でグループ化されたデータを受け取る
+
+                // データを表示
+                availabilityDisplayDiv.innerHTML = ''; // 表示をクリア
+
+                // 曜日マップ (JavaScript用)
+                const WEEKDAY_MAP_JS = {
+                    0: '日', 1: '月', 2: '火', 3: '水', 4: '木', 5: '金', 6: '土'
+                };
+
+                // 時間帯ソート順 (09:00のようにゼロパディングされていることを前提)
+                const timeSlotOrder = [
+                    '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00',
+                    '13:00 - 14:00', '14:00 - 15:00', '15:00 - 16:00', '16:00 - 17:00',
+                    '17:00 - 18:00', '18:00 - 19:00', '19:00 - 20:00', '20:00 - 21:00',
+                    '21:00 - 22:00', '22:00 - 23:00' 
+                ];
+
+                if (Object.keys(groupedDataByDate).length === 0) {
+                    availabilityDisplayDiv.innerHTML = `<div class="loading-message">現在、${sheetName} の向こう5日間の質問対応可能な時間はありません。</div>`;
+                    return;
+                }
+
+                // 日付ごとに表示
+                for (const dateStr of Object.keys(groupedDataByDate).sort()) { // 日付文字列でソート
+                    const dateGroupDiv = document.createElement('div');
+                    dateGroupDiv.classList.add('date-group');
+
+                    // 日付ヘッダー 例: 7月13日(日)
+                    const dateObj = new Date(dateStr); // 'YYYY/MM/DD'形式からDateオブジェクトに
+                    const month = dateObj.getMonth() + 1;
+                    const day = dateObj.getDate();
+                    const weekdayIndex = dateObj.getDay(); // 0=日, 1=月...
+                    const weekdayKanji = WEEKDAY_MAP_JS[weekdayIndex];
+
+                    const dateHeader = document.createElement('div');
+                    dateHeader.classList.add('date-header');
+                    dateHeader.textContent = `${month}月${day}日 (${weekdayKanji})`;
+                    dateGroupDiv.appendChild(dateHeader);
+
+                    const dataForDate = groupedDataByDate[dateStr];
+
+                    // 時間帯でグループ化 (JS側で再グループ化、必要に応じて)
+                    const groupedByTimeSlot = dataForDate.reduce((acc, item) => {
+                        if (!acc[item.time_slot]) {
+                            acc[item.time_slot] = [];
+                        }
+                        acc[item.time_slot].push(item);
+                        return acc;
+                    }, {});
+
+                    const sortedTimeSlotsForDate = Object.keys(groupedByTimeSlot).sort((a, b) => {
+                        const indexA = timeSlotOrder.indexOf(a);
+                        const indexB = timeSlotOrder.indexOf(b);
+                        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                        if (indexA === -1) return 1;
+                        if (indexB === -1) return -1;
+                        return indexA - indexB;
+                    });
+
+
+                    for (const timeSlot of sortedTimeSlotsForDate) {
+                        const timeSlotGroupDiv = document.createElement('div');
+                        timeSlotGroupDiv.classList.add('time-slot-group');
+
+                        const header = document.createElement('div');
+                        header.classList.add('time-slot-header');
+                        header.textContent = timeSlot;
+                        timeSlotGroupDiv.appendChild(header);
+
+                        const sortedSubjectsInSlot = groupedByTimeSlot[timeSlot].sort((a, b) => 
+                            a.subject.localeCompare(b.subject, 'ja', { sensitivity: 'base' })
+                        );
+
+                        sortedSubjectsInSlot.forEach(item => {
+                            const itemDiv = document.createElement('div');
+                            itemDiv.classList.add('subject-item');
+
+                            const infoDiv = document.createElement('div');
+                            infoDiv.classList.add('info');
+
+                            const subjectName = document.createElement('span');
+                            subjectName.classList.add('subject-name');
+                            subjectName.textContent = item.subject;
+                            infoDiv.appendChild(subjectName);
+
+                            const teacherName = document.createElement('span');
+                            teacherName.classList.add('teacher-name');
+                            teacherName.textContent = item.teacher;
+                            infoDiv.appendChild(teacherName);
+                            
+                            itemDiv.appendChild(infoDiv);
+
+                            const statusSpan = document.createElement('span');
+                            statusSpan.classList.add('status');
+                            statusSpan.textContent = item.status;
+                            
+                            // --- 修正箇所: is_in_session フラグに基づいてクラスを追加 ---
+                            if (item.is_in_session) {
+                                // statusSpan.classList.add('in-session'); // このクラスは不要になりました
+                                itemDiv.classList.add('in-session-item'); // itemDiv全体をグレーアウトするため
+                            } else if (item.status === '可能') {
+                                statusSpan.classList.add('available');
+                            } else {
+                                statusSpan.classList.add('unavailable'); // その他のステータス
+                            }
+                            itemDiv.appendChild(statusSpan);
+
+                            timeSlotGroupDiv.appendChild(itemDiv);
+                        });
+                        dateGroupDiv.appendChild(timeSlotGroupDiv);
+                    }
+                    availabilityDisplayDiv.appendChild(dateGroupDiv);
+                }
+
+                lastUpdatedElement.textContent = `最終更新: ${new Date().toLocaleTimeString('ja-JP')}`;
+
+            } catch (error) {
+                console.error('データ取得エラー:', error);
+                availabilityDisplayDiv.innerHTML = '<div class="loading-message" style="color:red;">データ取得中にエラーが発生しました。時間を置いて再度お試しください。</div>';
+                lastUpdatedElement.textContent = '';
+            }
+        }
+
+        fetchAvailabilityForSubject(sheetName);
+
+        // 10秒ごとにデータを更新 (ポーリング)
+        setInterval(() => fetchAvailabilityForSubject(sheetName), 20 * 1000);
+    </script>
+</body>
+</html>

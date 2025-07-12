@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明治大学 質問対応科目一覧</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6; /* 背景色はそのまま */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        #subject-list {
+            width: 90%;
+            max-width: 800px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            justify-items: center;
+        }
+
+        .subject-link {
+            color: black; /* --- 修正箇所: テキスト色を一律黒に --- */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1 / 1;
+            width: 100%;
+            max-width: 180px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .subject-link:hover {
+            opacity: 0.85;
+            transform: translateY(-2px);
+        }
+
+        .loading-message {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+
+        /* --- ここから科目ごとの色定義 (基本色に戻す) --- */
+        /* 理系数学：青（若干濃いめ） */
+        .color-理系数学 { background-color: #34495e; } 
+        /* 文系数学：青（若干薄め） */
+        .color-文系数学 { background-color: #5fa2dd; } 
+        /* 英語：黄色 */
+        .color-英語 { background-color: #f1c40f; } 
+        /* 世界史：紫 */
+        .color-世界史 { background-color: #9b59b6; } 
+        /* 日本史：茶色 */
+        .color-日本史 { background-color: #795548; } 
+        /* 地理：橙 */
+        .color-地理 { background-color: #e67e22; } 
+        /* 物理：緑 */
+        .color-物理 { background-color: #27ae60; } 
+        /* 化学：黄緑 */
+        .color-化学 { background-color: #aadd22; } 
+        /* 生物：緑（薄め） */
+        .color-生物 { background-color: #8bc34a; } 
+        
+        /* 現代文、古文、漢文：ピンク */
+        .color-japanese-lang { background-color: #FF69B4; } /* HotPinkを代表色に */
+        
+        /* --- レスポンシブ対応 (スマホで2列) --- */
+        @media (max-width: 600px) {
+            #subject-list {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 15px;
+                gap: 10px;
+            }
+            .subject-link {
+                font-size: 1.1em;
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (min-width: 601px) and (max-width: 900px) {
+            #subject-list {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>質問対応科目一覧</h1>
+
+    <div id="subject-list">
+        <div class="loading-message">科目情報を読み込み中...</div>
+    </div>
+
+    <script>
+        const subjectListDiv = document.getElementById('subject-list');
+
+        const subjectColors = {
+            '理系数学': '理系数学', 
+            '文系数学': '文系数学',
+            '英語': '英語',
+            '世界史': '世界史',
+            '日本史': '日本史',
+            '地理': '地理',
+            '物理': '物理',
+            '化学': '化学',
+            '生物': '生物',
+            '現代文': 'japanese-lang', // 国語系はまとめてjapanese-langクラスに
+            '古文': 'japanese-lang',
+            '漢文': 'japanese-lang',
+            // 他の科目があればここに追加
+        };
+
+        async function fetchSubjectNames() {
+            try {
+                const response = await fetch('/api/sheets');
+                const sheetNames = await response.json();
+
+                subjectListDiv.innerHTML = ''; 
+
+                if (sheetNames.length === 0) {
+                    subjectListDiv.innerHTML = '<div class="loading-message">表示可能な科目が見つかりません。</div>';
+                    return;
+                }
+
+                sheetNames.forEach(sheetName => {
+                    const link = document.createElement('a');
+                    link.classList.add('subject-link');
+                    
+                    const colorKey = subjectColors[sheetName] || 'default'; 
+                    link.classList.add(`color-${colorKey}`); 
+                    
+                    link.href = `/subject/${encodeURIComponent(sheetName)}`;
+                    link.textContent = sheetName;
+                    subjectListDiv.appendChild(link);
+                });
+
+            } catch (error) {
+                console.error('科目名取得エラー:', error);
+                subjectListDiv.innerHTML = '<div class="loading-message" style="color:red;">科目情報の取得中にエラーが発生しました。</div>';
+            }
+        }
+
+        fetchSubjectNames();
+    </script>
+</body>
+</html>
