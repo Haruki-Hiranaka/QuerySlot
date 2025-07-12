@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>明治大学 質問対応科目一覧</title>
-    <style>
+    <title>QuerySlot</title> <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 20px;
-            background-color: #f4f7f6; /* 背景色はそのまま */
+            background-color: #f4f7f6;
             color: #333;
             display: flex;
             flex-direction: column;
@@ -32,7 +31,7 @@
         }
 
         .subject-link {
-            color: black; /* --- 修正箇所: テキスト色を一律黒に --- */
+            color: black;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -44,9 +43,11 @@
             justify-content: center;
             aspect-ratio: 1 / 1;
             width: 100%;
-            max-width: 180px;
+            /* --- 修正: max-width はモバイル表示では邪魔になる場合があるので削除 --- */
+            /* max-width: 180px; */ 
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box; /* --- 追加: パディングとボーダーを幅に含める --- */
         }
         .subject-link:hover {
             opacity: 0.85;
@@ -59,39 +60,35 @@
             color: #777;
         }
 
-        /* --- ここから科目ごとの色定義 (基本色に戻す) --- */
-        /* 理系数学：青（若干濃いめ） */
+        /* --- ここから科目ごとの色定義 (基本色) --- */
+        /* 数学系 */
         .color-理系数学 { background-color: #34495e; } 
-        /* 文系数学：青（若干薄め） */
         .color-文系数学 { background-color: #5fa2dd; } 
-        /* 英語：黄色 */
-        .color-英語 { background-color: #f1c40f; } 
-        /* 世界史：紫 */
-        .color-世界史 { background-color: #9b59b6; } 
-        /* 日本史：茶色 */
-        .color-日本史 { background-color: #795548; } 
-        /* 地理：橙 */
-        .color-地理 { background-color: #e67e22; } 
-        /* 物理：緑 */
+        /* 理科系 */
         .color-物理 { background-color: #27ae60; } 
-        /* 化学：黄緑 */
         .color-化学 { background-color: #aadd22; } 
-        /* 生物：緑（薄め） */
         .color-生物 { background-color: #8bc34a; } 
-        
-        /* 現代文、古文、漢文：ピンク */
-        .color-japanese-lang { background-color: #FF69B4; } /* HotPinkを代表色に */
-        
+        /* 地歴公民系 */
+        .color-世界史 { background-color: #9b59b6; } 
+        .color-日本史 { background-color: #795548; } 
+        .color-地理 { background-color: #e67e22; } 
+        /* 国語系 */
+        .color-japanese-lang { background-color: #FF69B4; } 
+        /* 英語 */
+        .color-英語 { background-color: #f1c40f; } 
+
+
         /* --- レスポンシブ対応 (スマホで2列) --- */
         @media (max-width: 600px) {
             #subject-list {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, 1fr); /* 2列表示を維持 */
                 padding: 15px;
-                gap: 10px;
+                gap: 10px; /* ギャップを少し小さく */
             }
             .subject-link {
                 font-size: 1.1em;
-                padding: 10px;
+                padding: 10px; /* パディングを調整 */
+                /* width: 100%; は残し、max-widthを削除することで自動調整に任せる */
             }
             h1 {
                 font-size: 1.8em;
@@ -107,9 +104,7 @@
     </style>
 </head>
 <body>
-    <h1>質問対応科目一覧</h1>
-
-    <div id="subject-list">
+    <h1>QuerySlot</h1> <div id="subject-list">
         <div class="loading-message">科目情報を読み込み中...</div>
     </div>
 
@@ -126,10 +121,9 @@
             '物理': '物理',
             '化学': '化学',
             '生物': '生物',
-            '現代文': 'japanese-lang', // 国語系はまとめてjapanese-langクラスに
+            '現代文': 'japanese-lang',
             '古文': 'japanese-lang',
             '漢文': 'japanese-lang',
-            // 他の科目があればここに追加
         };
 
         async function fetchSubjectNames() {
