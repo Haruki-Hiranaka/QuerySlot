@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuerySlot</title> <style>
+    <title>QuerySlot</title> 
+    <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 20px;
@@ -43,11 +44,11 @@
             justify-content: center;
             aspect-ratio: 1 / 1;
             width: 100%;
-            /* --- 修正: max-width はモバイル表示では邪魔になる場合があるので削除 --- */
+            /* max-width はモバイル表示では邪魔になる場合があるので削除 */
             /* max-width: 180px; */ 
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            box-sizing: border-box; /* --- 追加: パディングとボーダーを幅に含める --- */
+            box-sizing: border-box; /* パディングとボーダーを幅に含める */
         }
         .subject-link:hover {
             opacity: 0.85;
@@ -72,6 +73,7 @@
         .color-世界史 { background-color: #9b59b6; } 
         .color-日本史 { background-color: #795548; } 
         .color-地理 { background-color: #e67e22; } 
+        .color-政治・経済 { background-color: #b68a1a; } /* 政治・経済の色 */
         /* 国語系 */
         .color-japanese-lang { background-color: #FF69B4; } 
         /* 英語 */
@@ -88,7 +90,6 @@
             .subject-link {
                 font-size: 1.1em;
                 padding: 10px; /* パディングを調整 */
-                /* width: 100%; は残し、max-widthを削除することで自動調整に任せる */
             }
             h1 {
                 font-size: 1.8em;
@@ -104,7 +105,8 @@
     </style>
 </head>
 <body>
-    <h1>QuerySlot</h1> <div id="subject-list">
+    <h1>QuerySlot</h1> 
+    <div id="subject-list">
         <div class="loading-message">科目情報を読み込み中...</div>
     </div>
 
@@ -124,6 +126,7 @@
             '現代文': 'japanese-lang',
             '古文': 'japanese-lang',
             '漢文': 'japanese-lang',
+            '政治・経済': '政治・経済', // ★修正点: この行を追加★
         };
 
         async function fetchSubjectNames() {
